@@ -12,7 +12,7 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('Whatsapp Clients Manager')
-    .setDescription('Resgister/Config a whatsapp client to run like an api')
+    .setDescription('Resgister/Config whatsapp clients to run like an api')
     .setVersion('1.0')
     .addTag('Whatsapp Clients')
     .addTag('WebHook')

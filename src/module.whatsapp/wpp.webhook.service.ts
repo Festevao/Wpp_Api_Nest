@@ -1,18 +1,23 @@
 import { Injectable } from '@nestjs/common';
+import axios, { AxiosHeaders } from 'axios';
 import moment from 'moment';
 
 @Injectable()
 class WebhookService {
-  private fetchTimeout(
-    url: string,
-    ms: number,
-    { signal, ...options } = { signal: undefined, options: {} }
-  ) {
-    const controller = new AbortController();
-    const promise = fetch(url, { signal: controller.signal, ...options });
-    if (signal) signal.addEventListener('abort', () => controller.abort());
-    const timeout = setTimeout(() => controller.abort(), ms);
-    return promise.finally(() => clearTimeout(timeout));
+  private async makePostRequest(url: string, data: object) {
+    try {
+      const response = await axios.post(
+        url,
+        { data },
+        {
+          headers: new AxiosHeaders({ 'Content-Type': 'application/json' }),
+          timeout: 10000,
+        }
+      );
+      return response.status >= 200 && response.status <= 299;
+    } catch (error) {
+      return error;
+    }
   }
 
   private getClientEndPoint(costummerToken: string) {
@@ -24,24 +29,14 @@ class WebhookService {
   }
 
   async sendMessage(costummerToken: string, message: object) {
-    const headersJson = {
-      'Content-Type': 'application/json',
-    };
-    const fetchOptions = {
-      method: 'POST',
-      headers: headersJson,
-      body: JSON.stringify(this.encodeMessage(message)),
-      redirect: 'follow',
-    };
-
     const [endPoint, costummer] = this.getClientEndPoint(costummerToken);
 
-    const webhookResponse = await this.fetchTimeout(endPoint, 10000, fetchOptions as any);
+    const webhookResponse = await this.makePostRequest(endPoint, message);
 
-    if (webhookResponse.status < 200 || webhookResponse.status >= 300) {
+    if (webhookResponse instanceof Error) {
       console.log(
         moment().format(),
-        `Webhook error on send to ${costummer} | EndPoint: ${endPoint} | Status: ${webhookResponse.status}`
+        `Webhook error on send to ${costummer} | EndPoint: ${endPoint} | Message: ${webhookResponse.message}`
       );
     }
   }
