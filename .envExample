@@ -1,0 +1,11 @@
+DB_TYPE=(Install Requerid Driver If Not Use "mysql")<"mysql" OR "postgres" OR
+"cockroachdb" OR "sap" OR "mariadb" OR "sqlite" OR "cordova" OR "react-native" OR
+"nativescript" OR "sqljs" OR "oracle" OR "mssql" OR "mongodb" OR "aurora-mysql" OR
+"aurora-postgres" OR "expo" OR "better-sqlite3" OR "capacitor" OR "spanner"> DB_HOST=
+DB_PORT= DB_USER= DB_PASSWORD= DB_DATABASE= DB_SYNCHRONIZE=(ONLY "true", Dont Use On
+Production)<IF NEEDDED>
+  REDIS_HOST= REDIS_PORT= REDIS_USER=<IF NEEDDED>
+    REDIS_PASSWORD=<IF NEEDDED>
+      SMTP_HOST= SMTP_PORT= SMTP_USER= SMTP_PASSWORD= SMTP_FROM= ON_ERROR_EMAILS=(String
+      Array)<IF NEEDDED></IF></IF></IF
+></IF>

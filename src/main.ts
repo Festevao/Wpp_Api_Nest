@@ -4,6 +4,13 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { WhatsappModule } from './module.whatsapp/wpp.module';
 import { urlencoded, json } from 'express';
 import { ValidationPipe } from '@nestjs/common';
+import { isPort } from 'class-validator';
+
+function parsePORT(PORT: string) {
+  const tryParse = parseInt(PORT);
+  if (isNaN(tryParse) || !isPort(tryParse)) return PORT;
+  return tryParse;
+}
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(WhatsappModule, {
@@ -14,8 +21,8 @@ async function bootstrap() {
     .setTitle('Whatsapp Clients Manager')
     .setDescription('Resgister/Config whatsapp clients to run like an api')
     .setVersion('1.0')
+    .addTag('Users')
     .addTag('Whatsapp Clients')
-    .addTag('WebHook')
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
@@ -24,6 +31,7 @@ async function bootstrap() {
   app.use(json({ limit: '500mb' }));
   app.use(urlencoded({ extended: true, limit: '500mb' }));
   app.enableCors();
-  await app.listen(3010);
+  const PORT = process.env.PORT ? parsePORT(process.env.PORT) : 3010;
+  await app.listen(PORT);
 }
 bootstrap();
