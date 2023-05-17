@@ -41,6 +41,7 @@
     "qrcode": "^1.5.1",
     "rxjs": "^7.8.0",
     "typeorm": "^0.3.15",
+    "venom-bot": "^5.0.1",
     "whatsapp-web.js": "^1.19.5"
   },
   "devDependencies": {

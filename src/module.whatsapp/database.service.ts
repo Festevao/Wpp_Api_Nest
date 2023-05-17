@@ -2,7 +2,7 @@ import { Injectable, Inject } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { User } from './database/models/user.entity';
 import { Bot } from './database/models/bot.entity';
-import { TxtMessage } from './database/models/textMsg.entity';
+import { Message } from './database/models/message.entity';
 import { UserDTO } from './dto/user.body.dto';
 import { ClientDTO } from './dto/client.dto';
 import { randomBytes } from 'crypto';
@@ -14,8 +14,8 @@ class DataBaseService {
     private userRepository: Repository<User>,
     @Inject('BOT_REPOSITORY')
     private botRepository: Repository<Bot>,
-    @Inject('TXT_MESSAGE_REPOSITORY')
-    private txtMessageRepository: Repository<TxtMessage>
+    @Inject('MESSAGES_REPOSITORY')
+    private messageRepository: Repository<Message>
   ) {}
 
   async userCreate(user: UserDTO) {
@@ -41,6 +41,10 @@ class DataBaseService {
     return (await this.botRepository.findOne({ where: { botId } })).userId;
   }
 
+  async botDropById(botId: string) {
+    return await this.botRepository.delete({ botId });
+  }
+
   async botCreate(bot: ClientDTO) {
     if (!bot.encodeToken) {
       bot.encodeToken = randomBytes(16).toString('hex');
@@ -60,8 +64,12 @@ class DataBaseService {
     return await this.botRepository.find({ where: { userId: userId as any } });
   }
 
-  async txtMessageFindAll() {
-    return await this.txtMessageRepository.find();
+  async messageFindAll() {
+    return await this.messageRepository.find();
+  }
+
+  async messageCreate(msg: any) {
+    return await this.messageRepository.insert(msg);
   }
 }
 

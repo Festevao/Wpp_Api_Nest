@@ -10,9 +10,9 @@ import {
 import { Bot } from './bot.entity';
 
 @Entity()
-class TxtMessage {
+class Message {
   @PrimaryGeneratedColumn({ primaryKeyConstraintName: 'PRIMARY' })
-  txtMsgId: number;
+  msgId: string;
 
   @ManyToOne((type) => Bot)
   @JoinColumn({ name: 'botId' })
@@ -21,8 +21,11 @@ class TxtMessage {
   @Column({ length: 45 })
   to: string;
 
+  @Column({ length: 45 })
+  from: string;
+
   @Column({ type: 'text' })
-  data: string;
+  body: string;
 
   @CreateDateColumn()
   createAt: Date;
@@ -31,4 +34,4 @@ class TxtMessage {
   updateAt: Date;
 }
 
-export { TxtMessage };
+export { Message };

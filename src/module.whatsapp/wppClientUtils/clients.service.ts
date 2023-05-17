@@ -1,35 +1,15 @@
 import { Injectable, Scope } from '@nestjs/common';
-import { Client, LocalAuth, Location, MessageSendOptions } from 'whatsapp-web.js';
+import { create, Whatsapp } from 'venom-bot';
 import { WebhookService } from '../wpp.webhook.service';
-import { WppMessage } from '../dto/intenalMessage.dto';
 import { DataBaseService } from '../database.service';
 import { ClientDTO } from '../dto/client.dto';
-import { BaseMessageDTO } from '../dto/messages.body/baseMessage.body.dto';
 import path from 'path';
 
 enum WppClientStatus {
   INITIALIZING = 0,
   AUTHENTICATING = 1,
-  AUTHENTICATION_SUCCESS = 2,
-  AUTHENTICATION_FAILED = 3,
-  READY = 4,
-  DISCONNECTED = 5,
-}
-
-class WppClient extends Client {
-  constructor(readonly clientId: string) {
-    super({
-      authStrategy: new LocalAuth({
-        clientId,
-        dataPath: path.join(__dirname, '/sessions'),
-      }),
-      puppeteer: {
-        headless: false,
-      },
-    });
-  }
-  qr: string;
-  status: WppClientStatus = 0;
+  READY = 2,
+  DISCONNECTED = 3,
 }
 
 @Injectable({ scope: Scope.DEFAULT, durable: true })
@@ -40,66 +20,76 @@ class WppClientsService {
   ) {
     this.init();
   }
-  private clients: WppClient[] = [];
+  private clients: Whatsapp[] = [];
+  private clientsInfos: { botId: string; qr: string; status: WppClientStatus }[] = [];
 
   async init() {
     const storedClients = await this.dataBaseService.botFindAll();
     storedClients.forEach(async (bot) => {
+      this.clientsInfos.push({ botId: bot.botId, qr: undefined, status: 0 });
       await this.add(bot, false);
     });
   }
 
   async add(clientInfos: ClientDTO, store = true) {
     const clientExists = this.clients.some(
-      (client) => client.clientId === clientInfos.botId
+      (client) => client.session === clientInfos.botId
     );
     if (clientExists) {
       return false;
     }
 
-    const newClient = new WppClient(clientInfos.botId);
+    const newClient = await create(
+      //session
+      clientInfos.botId, //Pass the name of the client you want to start the bot
+      //catchQR
+      (base64Qrimg, asciiQR, attempts, urlCode) => {
+        console.log(`WPP CLIENT | ${clientInfos.botId} QR RECEIVED`, urlCode);
+        console.log(asciiQR);
+        try {
+          const index = this.clientsInfos.findIndex(
+            (qr) => qr.botId === clientInfos.botId
+          );
+          this.clientsInfos[index].qr = urlCode;
+          this.clientsInfos[index].status = 1;
+        } catch (error) {
+          console.error(error);
+        }
+      },
+      // statusFind
+      (statusSession, session) => {
+        console.log('Status Session: ', statusSession); //return isLogged || notLogged || browserClose || qrReadSuccess || qrReadFail || autocloseCalled || desconnectedMobile || deleteToken || chatsAvailable || deviceNotConnected || serverWssNotConnected || noOpenBrowser || initBrowser || openBrowser || connectBrowserWs || initWhatsapp || erroPageWhatsapp || successPageWhatsapp || waitForLogin || waitChat || successChat
+        const index = this.clientsInfos.findIndex((qr) => qr.botId === session);
+        if (statusSession === 'isLogged' || statusSession === 'successChat') {
+          this.clientsInfos[index].status = 2;
+        }
+      },
+      // options
+      {
+        folderNameToken: path.join(__dirname, '/sessions'), //folder name when saving tokens
+        headless: false, // you should no longer use boolean false or true, now use false, true or 'new' learn more https://developer.chrome.com/articles/new-headless/
+        // puppeteerOptions: {}, // Will be passed to puppeteer.launch
+        attemptsForceConnectLoad: 4,
+        autoClose: 0,
+        updatesLog: true,
+        disableSpins: true, // Will disable Spinnies animation, useful for containers (docker) for a better log
+      },
+      // browser callback
+      (browser, waPage) => {
+        if (typeof browser !== 'string') {
+          console.log('Browser PID:', browser.process().pid);
+        }
+        if (typeof waPage !== 'boolean') {
+          waPage.screenshot({ path: 'screenshot.png' });
+        }
+      }
+    );
 
-    newClient.on('qr', (qr) => {
-      newClient.qr = qr;
-      newClient.status = 1;
-      console.log(`WPP CLIENT | ${clientInfos.botId} QR RECEIVED`, qr);
-    });
-
-    newClient.on('authenticated', () => {
-      newClient.status = 2;
-      console.log(`WPP CLIENT | ${clientInfos.botId} AUTHENTICATED`);
-    });
-
-    newClient.on('auth_failure', (message) => {
-      newClient.status = 3;
-      console.log(
-        `WPP CLIENT | ${clientInfos.botId} AUTHENTICATION FAILED with message: ${message}`
-      );
-    });
-
-    newClient.on('ready', () => {
-      newClient.status = 4;
-      console.log(`WPP CLIENT | ${clientInfos.botId} Client is ready!`);
-    });
-
-    newClient.on('disconnected', (reason) => {
-      newClient.status = 5;
-      console.log(
-        `WPP CLIENT | ${clientInfos.botId} Client disconnected by the reason: ${reason}`
-      );
-    });
-
-    newClient.on('message', async (msg: WppMessage) => {
-      msg.botId = clientInfos.botId;
-      await this.webhookService.sendMessage(msg);
+    newClient.onMessage((msg) => {
+      this.storeMessage(msg);
     });
 
     this.clients.push(newClient);
-    try {
-      newClient.initialize();
-    } catch (error) {
-      console.error(`WPP CLIENT | ${clientInfos.botId} Error on initialize:`, error);
-    }
 
     if (store) {
       return await this.dataBaseService.botCreate(clientInfos);
@@ -107,65 +97,90 @@ class WppClientsService {
     return clientInfos;
   }
 
-  getClient(clientId: string) {
-    const index = this.clients.findIndex((client) => client.clientId === clientId);
-    if (index !== -1 && this.clients[index].status === 1) {
-      return this.clients[index];
-    }
-    return false;
+  get clientsList() {
+    return this.clientsInfos;
   }
 
-  drop(clientId: string) {
-    const index = this.clients.findIndex((client) => client.clientId === clientId);
+  async storeMessage(msg: any) {
+    console.log(msg);
+    const msgAux: any = {};
+    msgAux.botId = msg.botId;
+    if (msg.me) {
+      msgAux.from = msg.me.id._serialized;
+    } else if (msg.from) {
+      msgAux.from = msg.from;
+    }
+    if (typeof msg.to !== 'string') {
+      msgAux.to = msg.to.remote._serialized;
+    }
+    msgAux.body = msg.body;
+    console.log(msgAux);
+    await this.webhookService.sendMessage(msgAux);
+    await this.dataBaseService.messageCreate(msgAux);
+  }
+
+  async drop(clientId: string) {
+    await this.dataBaseService.botDropById(clientId);
+    const index = this.clients.findIndex((client) => client.session === clientId);
     if (index !== -1) {
-      this.clients[index].destroy();
+      try {
+        await this.clients[index].logout();
+      } catch (error) {
+        console.error(error);
+      }
       this.clients.splice(index, 1);
+      return 200;
     }
     return false;
   }
 
   getClientQr(clientId: string) {
-    const index = this.clients.findIndex((client) => client.clientId === clientId);
-    if (index !== -1 && this.clients[index].status === 1) {
-      return [this.clients[index].status, this.clients[index].qr];
+    console.log(this.clientsInfos);
+    const index = this.clientsInfos.findIndex((qr) => qr.botId === clientId);
+    if (index !== -1) {
+      return this.clientsInfos[index].qr;
     }
-    return [false, false];
+    return false;
   }
 
-  private buildMessage(messageData: BaseMessageDTO) {
-    const data = messageData.data as any;
-    let message;
-    let aditionalOptions = {};
-    if (data.text) {
-      message = data.text;
-    }
-    if (data.latitude && data.longitude) {
-      data.description = data.description
-        ? data.description
-        : `${data.latitude} ${data.longitude}`;
-      message = `https://www.google.com/maps/search/?api=1&query=${data.latitude},${data.longitude}`;
-      aditionalOptions = { linkPreview: true };
-    }
-    console.log('to:', `${messageData.to.split('+')[1]}@c.us`);
-    console.log('message:', message);
-    return [`${messageData.to.split('+')[1]}@c.us`, message, aditionalOptions];
-  }
-
-  async sendMessageFromClient(
-    clientId: string,
-    messageData: BaseMessageDTO,
-    options: MessageSendOptions = {}
-  ) {
-    const index = this.clients.findIndex((client) => client.clientId === clientId);
-    if (index !== -1 && this.clients[index].status === 4) {
-      const [to, message, aditionalOptions] = this.buildMessage(messageData);
-      console.log(Object.assign(options, aditionalOptions));
-      console.log(options);
-      const msg: WppMessage = {
+  async sendTextFromClient(clientId: string, to: string, text: string) {
+    const indexClient = this.clients.findIndex((client) => client.session === clientId);
+    const indexStatus = this.clientsInfos.findIndex((info) => info.botId === clientId);
+    if (
+      indexClient !== -1 &&
+      indexStatus !== -1 &&
+      this.clientsInfos[indexClient].status === 2
+    ) {
+      const msg: any = {
         botId: clientId,
-        ...(await this.clients[index].sendMessage(to, message, options)),
+        ...(await this.clients[indexClient].sendText(to, text)),
       };
-      await this.webhookService.sendMessage(msg);
+      await this.storeMessage(msg);
+      return msg;
+    }
+    return false;
+  }
+
+  async sendButtonsFromClient(
+    clientId: string,
+    to: string,
+    title: string,
+    subtitle: string,
+    buttons: any
+  ) {
+    const indexClient = this.clients.findIndex((client) => client.session === clientId);
+    const indexStatus = this.clientsInfos.findIndex((info) => info.botId === clientId);
+    if (
+      indexClient !== -1 &&
+      indexStatus !== -1 &&
+      this.clientsInfos[indexClient].status === 2
+    ) {
+      console.log(to, title, subtitle, buttons);
+      const msg: any = {
+        botId: clientId,
+        ...(await this.clients[indexClient].sendButtons(to, title, buttons, subtitle)),
+      };
+      await this.storeMessage(msg);
       return msg;
     }
     return false;

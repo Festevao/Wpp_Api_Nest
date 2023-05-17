@@ -1,6 +1,7 @@
 import { IsString, IsLatitude, IsLongitude, IsOptional } from 'class-validator';
+import { BaseMessageDTO } from './baseMessage.body.dto';
 
-class LocationMessageDataDTO {
+class LocationMessageDataDTO extends BaseMessageDTO {
   /**
    * Location latitude
    */

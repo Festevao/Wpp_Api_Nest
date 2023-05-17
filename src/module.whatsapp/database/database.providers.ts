@@ -1,7 +1,7 @@
 import { DataSource } from 'typeorm';
 import { User } from './models/user.entity';
 import { Bot } from './models/bot.entity';
-import { TxtMessage } from './models/textMsg.entity';
+import { Message } from './models/message.entity';
 
 export const databaseProviders = [
   {
@@ -32,8 +32,8 @@ export const databaseProviders = [
     inject: ['WHATSAPP_DATA'],
   },
   {
-    provide: 'TXT_MESSAGE_REPOSITORY',
-    useFactory: (dataSource: DataSource) => dataSource.getRepository(TxtMessage),
+    provide: 'MESSAGES_REPOSITORY',
+    useFactory: (dataSource: DataSource) => dataSource.getRepository(Message),
     inject: ['WHATSAPP_DATA'],
   },
 ];

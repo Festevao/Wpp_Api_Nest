@@ -3,7 +3,6 @@ import axios, { AxiosHeaders } from 'axios';
 import { DataBaseService } from './database.service';
 import { WppMailService } from './wpp.mailer.service';
 import CryptoJS from 'crypto-js';
-import { WppMessage } from './dto/intenalMessage.dto';
 
 @Injectable()
 class WebhookService {
@@ -56,12 +55,12 @@ class WebhookService {
     }
   }
 
-  private encodeMessage(message: WppMessage, encodeToken: string) {
+  private encodeMessage(message: any, encodeToken: string) {
     const stringMessage = JSON.stringify(message);
     return CryptoJS.AES.encrypt(stringMessage, encodeToken).toString();
   }
 
-  async sendMessage(message: WppMessage) {
+  async sendMessage(message: any) {
     const [endPoint, botId, encodeToken] = await this.getMessageInfos(message.botId);
     if (!endPoint) {
       return;
