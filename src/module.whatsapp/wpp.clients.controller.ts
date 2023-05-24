@@ -18,8 +18,8 @@ import { Authorized } from './authentication/roles.decorator';
 import { UserRolesGuard } from './authentication/user.guard';
 import { Role } from './database/models/user.entity';
 import { ClientDTO } from './dto/client.dto';
-import { WppClientsService } from './wppClientUtils/clients.service';
-import { ButtonsMessageDataDTO } from './dto/messages.body/buttonsMessage.body.dto';
+import { WppClientsService } from './wppClientUtils/clients.service.old';
+// import { ButtonsMessageDataDTO } from './dto/messages.body/buttonsMessage.body.dto';
 
 @ApiTags('Whatsapp Clients')
 @UseGuards(ClientRoleGuard, UserRolesGuard)
@@ -87,32 +87,32 @@ class WppClientsController {
     return new OkReponseSendMessage("Added to 'SendMessagesQueue'");
   }
 
-  @Post(':wppClientId/send-buttons')
-  @Authorized()
-  async sendButtonsMessage(
-    @Body() body: ButtonsMessageDataDTO,
-    @Param() params: { wppClientId: string }
-  ) {
-    console.log('body:', body);
-    console.log('params:', params);
-    let msgResponse: any;
-    try {
-      msgResponse = await this.wppClientsService.sendButtonsFromClient(
-        params.wppClientId,
-        body.to.split('+')[1] + '@c.us',
-        body.title,
-        body.subtitle,
-        body.buttons
-      );
-    } catch (error) {
-      console.error(error);
-      throw new ForbiddenException('Error on send Message');
-    }
-    if (!msgResponse) {
-      throw new HttpException('Client is not ready', HttpStatus.SERVICE_UNAVAILABLE);
-    }
-    return new OkReponseSendMessage("Added to 'SendMessagesQueue'");
-  }
+  // @Post(':wppClientId/send-buttons')
+  // @Authorized()
+  // async sendButtonsMessage(
+  //   @Body() body: ButtonsMessageDataDTO,
+  //   @Param() params: { wppClientId: string }
+  // ) {
+  //   console.log('body:', body);
+  //   console.log('params:', params);
+  //   let msgResponse: any;
+  //   try {
+  //     msgResponse = await this.wppClientsService.sendButtonsFromClient(
+  //       params.wppClientId,
+  //       body.to.split('+')[1] + '@c.us',
+  //       body.title,
+  //       body.subtitle,
+  //       body.buttons
+  //     );
+  //   } catch (error) {
+  //     console.error(error);
+  //     throw new ForbiddenException('Error on send Message');
+  //   }
+  //   if (!msgResponse) {
+  //     throw new HttpException('Client is not ready', HttpStatus.SERVICE_UNAVAILABLE);
+  //   }
+  //   return new OkReponseSendMessage("Added to 'SendMessagesQueue'");
+  // }
 }
 
 export { WppClientsController };

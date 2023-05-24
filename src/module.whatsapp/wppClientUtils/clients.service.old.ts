@@ -1,11 +1,5 @@
 import { Injectable, Scope } from '@nestjs/common';
-import {
-  Client,
-  LocalAuth,
-  MessageSendOptions,
-  MessageContent,
-  Buttons,
-} from 'whatsapp-web.js';
+import { Client, LocalAuth, Buttons } from 'whatsapp-web.js';
 import { WebhookService } from '../wpp.webhook.service';
 import { WppMessage } from '../dto/intenalMessage.dto';
 import { DataBaseService } from '../database.service';
@@ -165,22 +159,17 @@ class WppClientsService {
   getClientQr(clientId: string) {
     const index = this.clients.findIndex((client) => client.clientId === clientId);
     if (index !== -1 && this.clients[index].status === 1) {
-      return [this.clients[index].status, this.clients[index].qr];
+      return this.clients[index].qr;
     }
-    return [false, false];
+    return false;
   }
 
-  async sendMessageFromClient(
-    clientId: string,
-    to: string,
-    message: MessageContent,
-    options: MessageSendOptions = {}
-  ) {
+  async sendTextFromClient(clientId: string, to: string, text: any) {
     const index = this.clients.findIndex((client) => client.clientId === clientId);
     if (index !== -1 && this.clients[index].status === 4) {
       const msg: WppMessage = {
         botId: clientId,
-        ...(await this.clients[index].sendMessage(to, message, options)),
+        ...(await this.clients[index].sendMessage(to, text)),
       };
       await this.storeMessage(msg);
       return msg;
@@ -200,7 +189,7 @@ class WppClientsService {
       buttonInfos.footer
     );
 
-    await this.sendMessageFromClient(clientId, to, buttonsMessage);
+    await this.sendTextFromClient(clientId, to, buttonsMessage);
   }
 }
 

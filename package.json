@@ -42,7 +42,7 @@
     "rxjs": "^7.8.0",
     "typeorm": "^0.3.15",
     "venom-bot": "^5.0.1",
-    "whatsapp-web.js": "^1.19.5"
+    "whatsapp-web.js": "*"
   },
   "devDependencies": {
     "@nestjs/cli": "^9.0.0",

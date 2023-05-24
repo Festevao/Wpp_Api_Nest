@@ -102,7 +102,10 @@ class WppClientsService {
   }
 
   async storeMessage(msg: any) {
-    console.log(msg);
+    console.log('messsage:', msg);
+    if (msg.type !== 'chat') {
+      return;
+    }
     const msgAux: any = {};
     msgAux.botId = msg.botId;
     if (msg.me) {
@@ -154,6 +157,9 @@ class WppClientsService {
       const msg: any = {
         botId: clientId,
         ...(await this.clients[indexClient].sendText(to, text)),
+        type: 'chat',
+        to,
+        body: text,
       };
       await this.storeMessage(msg);
       return msg;

@@ -8,7 +8,7 @@ import { DataBaseService } from './database.service';
 import { WppClientsController } from './wpp.clients.controller';
 import { WppMailService } from './wpp.mailer.service';
 import { WppUsersController } from './wpp.users.controller';
-import { WppClientsService } from './wppClientUtils/clients.service';
+import { WppClientsService } from './wppClientUtils/clients.service.old';
 import { WebhookService } from './wpp.webhook.service';
 import { UserRolesGuard, AUTHORIZED_TYPES_KEY } from './authentication/user.guard';
 
