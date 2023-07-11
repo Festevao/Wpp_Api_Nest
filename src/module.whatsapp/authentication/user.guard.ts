@@ -1,5 +1,5 @@
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
-import { DataBaseService } from '../database.service';
+import { DataBaseService } from '../database/services/database.service';
 import { Reflector } from '@nestjs/core';
 import { Role } from '../database/models/user.entity';
 import { AUTHORIZED_TYPES_KEY } from './roles.decorator';

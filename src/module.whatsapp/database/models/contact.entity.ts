@@ -7,25 +7,19 @@ import {
   PrimaryColumn,
   ManyToOne,
 } from 'typeorm';
-import { User } from './user.entity';
+import { Bot } from './bot.entity';
 
 @Entity()
-class Bot {
+class Contact {
   @PrimaryColumn({ primaryKeyConstraintName: 'PRIMARY', length: 45 })
-  botId: string;
+  contactNumber: string;
 
-  @ManyToOne(() => User)
-  @JoinColumn({ name: 'userId' })
-  userId: User;
-
-  @Column({ nullable: true, length: 255 })
-  webhookUrl: string;
-
-  @Column({ length: 32, unique: true })
-  encodeToken: string;
+  @ManyToOne(() => Bot, { nullable: false, eager: true })
+  @JoinColumn({ name: 'botId' })
+  botId: Bot;
 
   @Column({ nullable: true, length: 45 })
-  alias: string;
+  contactName: string;
 
   @CreateDateColumn()
   createAt: Date;
@@ -34,4 +28,4 @@ class Bot {
   updateAt: Date;
 }
 
-export { Bot };
+export { Contact };

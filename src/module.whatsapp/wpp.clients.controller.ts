@@ -41,10 +41,10 @@ class WppClientsController {
 
   @Delete(':wppClientId/delete')
   @Authorized()
-  async deleteClient(@Param() params: { wppClientId: string }) {
-    console.log('params:', params);
+  async deleteClient(@Param('wppClientId') wppClientId: string) {
+    console.log('wppClientId:', wppClientId);
     try {
-      return this.wppClientsService.drop(params.wppClientId);
+      return this.wppClientsService.drop(wppClientId);
     } catch (error) {
       console.error(error);
       throw new ForbiddenException('Error on delete bot');
@@ -53,9 +53,9 @@ class WppClientsController {
 
   @Get(':wppClientId/qr')
   @Authorized()
-  async getQr(@Param() params: { wppClientId: string }) {
-    console.log('params:', params);
-    const clientQr = this.wppClientsService.getClientQr(params.wppClientId);
+  async getQr(@Param('wppClientId') wppClientId: string) {
+    console.log('wppClientId:', wppClientId);
+    const clientQr = this.wppClientsService.getClientQr(wppClientId);
     if (typeof clientQr === 'string') {
       return clientQr;
     }
@@ -66,15 +66,15 @@ class WppClientsController {
   @Authorized()
   async sendTextMessage(
     @Body() body: TextMessageDataDTO,
-    @Param() params: { wppClientId: string }
+    @Param('wppClientId') wppClientId: string
   ) {
     console.log('body:', body);
-    console.log('params:', params);
+    console.log('wppClientId:', wppClientId);
     let msgResponse: any;
     try {
       msgResponse = await this.wppClientsService.sendTextFromClient(
-        params.wppClientId,
-        body.to.split('+')[1] + '@c.us',
+        wppClientId,
+        body.to,
         body.text
       );
     } catch (error) {
@@ -85,6 +85,42 @@ class WppClientsController {
       throw new HttpException('Client is not ready', HttpStatus.SERVICE_UNAVAILABLE);
     }
     return new OkReponseSendMessage("Added to 'SendMessagesQueue'");
+  }
+
+  @Post(':wppClientId/send-audio')
+  @Authorized()
+  async sendAudioMessage(
+    @Body() body: TextMessageDataDTO,
+    @Param('wppClientId') wppClientId: string
+  ) {
+    return 'ok';
+  }
+
+  @Post(':wppClientId/send-image')
+  @Authorized()
+  async sendImageMessage(
+    @Body() body: TextMessageDataDTO,
+    @Param('wppClientId') wppClientId: string
+  ) {
+    return 'ok';
+  }
+
+  @Post(':wppClientId/send-video')
+  @Authorized()
+  async sendVideoMessage(
+    @Body() body: TextMessageDataDTO,
+    @Param('wppClientId') wppClientId: string
+  ) {
+    return 'ok';
+  }
+
+  @Post(':wppClientId/recover-messages')
+  @Authorized()
+  async messagesRecover(
+    @Body() body: TextMessageDataDTO,
+    @Param('wppClientId') wppClientId: string
+  ) {
+    return 'ok';
   }
 
   // @Post(':wppClientId/send-buttons')

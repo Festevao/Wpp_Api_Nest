@@ -6,9 +6,9 @@ class MessageMedia {
   @PrimaryGeneratedColumn({ primaryKeyConstraintName: 'PRIMARY' })
   mediaId: string;
 
-  @OneToOne((type) => Message)
+  @OneToOne(() => Message)
   @JoinColumn({ name: 'msgId' })
-  msgId: string;
+  msgId: Message;
 
   @Column({ length: 45 })
   mimetype: string;

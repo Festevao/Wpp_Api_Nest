@@ -1,7 +1,7 @@
 import { Injectable, Scope } from '@nestjs/common';
 import { create, Whatsapp } from 'venom-bot';
 import { WebhookService } from '../wpp.webhook.service';
-import { DataBaseService } from '../database.service';
+import { DataBaseService } from '../database/services/database.service';
 import { ClientDTO } from '../dto/client.dto';
 import path from 'path';
 

@@ -14,9 +14,9 @@ class Message {
   @PrimaryGeneratedColumn({ primaryKeyConstraintName: 'PRIMARY' })
   msgId: string;
 
-  @ManyToOne((type) => Bot)
+  @ManyToOne(() => Bot, { nullable: false, eager: true })
   @JoinColumn({ name: 'botId' })
-  botId: string;
+  botId: Bot;
 
   @Column({ length: 45 })
   to: string;

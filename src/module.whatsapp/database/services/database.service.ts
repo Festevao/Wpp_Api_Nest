@@ -1,10 +1,10 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { Repository } from 'typeorm';
-import { User } from './database/models/user.entity';
-import { Bot } from './database/models/bot.entity';
-import { Message } from './database/models/message.entity';
-import { UserDTO } from './dto/user.body.dto';
-import { ClientDTO } from './dto/client.dto';
+import { User } from '../models/user.entity';
+import { Bot } from '../models/bot.entity';
+import { Message } from '../models/message.entity';
+import { UserDTO } from '../../dto/user.body.dto';
+import { ClientDTO } from '../../dto/client.dto';
 import { randomBytes } from 'crypto';
 
 @Injectable()
@@ -14,7 +14,7 @@ class DataBaseService {
     private userRepository: Repository<User>,
     @Inject('BOT_REPOSITORY')
     private botRepository: Repository<Bot>,
-    @Inject('MESSAGES_REPOSITORY')
+    @Inject('MESSAGE_REPOSITORY')
     private messageRepository: Repository<Message>
   ) {}
 

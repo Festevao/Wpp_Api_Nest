@@ -1,6 +1,6 @@
 import { Controller, Patch, Body, Param, Get, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { DataBaseService } from './database.service';
+import { DataBaseService } from './database/services/database.service';
 import { UserDTO } from './dto/user.body.dto';
 import { Authorized } from './authentication/roles.decorator';
 import { UserRolesGuard } from './authentication/user.guard';
@@ -19,9 +19,9 @@ class WppUsersController {
 
   @Get('get/:userId')
   @Authorized(Role.ADMIN)
-  async getById(@Param() params: { userId: string }) {
-    console.log('params:', params);
-    return await this.dataBaseService.userFindById(params.userId);
+  async getById(@Param('userId') userId: string) {
+    console.log('userId:', userId);
+    return await this.dataBaseService.userFindById(userId);
   }
 
   @Patch('')

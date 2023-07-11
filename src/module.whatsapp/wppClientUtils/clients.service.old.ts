@@ -2,23 +2,15 @@ import { Injectable, Scope } from '@nestjs/common';
 import { Client, LocalAuth, Buttons } from 'whatsapp-web.js';
 import { WebhookService } from '../wpp.webhook.service';
 import { WppMessage } from '../dto/intenalMessage.dto';
-import { DataBaseService } from '../database.service';
-import { ClientDTO } from '../dto/client.dto';
+import { DataBaseService } from '../database/services/database.service';
+import { DataBaseCampaignService } from '../database/services/database.campaign.service';
+import { ClientDTO, ClientStatus } from '../dto/client.dto';
 import path from 'path';
 
 type ButtonSpec = {
   id?: string;
   body: string;
 };
-
-enum WppClientStatus {
-  INITIALIZING = 0,
-  AUTHENTICATING = 1,
-  AUTHENTICATION_SUCCESS = 2,
-  AUTHENTICATION_FAILED = 3,
-  READY = 4,
-  DISCONNECTED = 5,
-}
 
 class WppClient extends Client {
   constructor(readonly clientId: string) {
@@ -33,14 +25,15 @@ class WppClient extends Client {
     });
   }
   qr: string;
-  status: WppClientStatus = 0;
+  status: ClientStatus = 0;
 }
 
 @Injectable({ scope: Scope.DEFAULT, durable: true })
 class WppClientsService {
   constructor(
     private webhookService: WebhookService,
-    private dataBaseService: DataBaseService
+    private dataBaseService: DataBaseService,
+    private dataBaseCampaignService: DataBaseCampaignService
   ) {
     this.init();
   }
@@ -84,13 +77,6 @@ class WppClientsService {
     newClient.on('ready', () => {
       newClient.status = 4;
       console.log(`WPP CLIENT | ${clientInfos.botId} Client is ready!`);
-
-      this.sendButtons(clientInfos.botId, '553284680116@c.us', {
-        body: 'teste',
-        buttons: [{ body: 'botaoTeste', id: '1' }],
-        title: 'testeTitulo',
-        footer: 'testeFoot',
-      });
     });
 
     newClient.on('disconnected', (reason) => {
@@ -102,6 +88,8 @@ class WppClientsService {
 
     newClient.on('message', async (msg: WppMessage) => {
       msg.botId = clientInfos.botId;
+      const contactNumber = msg.from;
+      await this.campaignUpdateOnInteraction(contactNumber, msg.botId);
       await this.storeMessage(msg);
     });
 
@@ -127,6 +115,14 @@ class WppClientsService {
     const index = this.clients.findIndex((client) => client.clientId === clientId);
     if (index !== -1 && this.clients[index].status === 1) {
       return this.clients[index];
+    }
+    return false;
+  }
+
+  getClientStatus(clientId: string) {
+    const index = this.clients.findIndex((client) => client.clientId === clientId);
+    if (index !== -1) {
+      return this.clients[index].status;
     }
     return false;
   }
@@ -165,6 +161,12 @@ class WppClientsService {
   }
 
   async sendTextFromClient(clientId: string, to: string, text: any) {
+    if (to.startsWith('+')) {
+      to = to.split('+')[1] + '@c.us';
+    }
+    if (!to.endsWith('@c.us')) {
+      to = to + '@c.us';
+    }
     const index = this.clients.findIndex((client) => client.clientId === clientId);
     if (index !== -1 && this.clients[index].status === 4) {
       const msg: WppMessage = {
@@ -190,6 +192,31 @@ class WppClientsService {
     );
 
     await this.sendTextFromClient(clientId, to, buttonsMessage);
+  }
+
+  async campaignUpdateOnInteraction(contactNumber: string, botId: string) {
+    contactNumber = contactNumber.replace(/\D/g, '');
+    const activeCampaigns = await this.dataBaseCampaignService.findActives();
+
+    for (let i = 0; i < activeCampaigns.length; i++) {
+      if (activeCampaigns[i].botId.botId !== botId) {
+        continue;
+      }
+
+      const stepsToWait = activeCampaigns[i].campaingSteps
+        .map((step, index) => (step.type === 'waitForInteraction' ? index : -1))
+        .filter((index) => index !== -1);
+
+      activeCampaigns[i].numbersToSend.forEach((numberInfo) => {
+        if (
+          stepsToWait.includes(numberInfo.state) &&
+          numberInfo.number === contactNumber
+        ) {
+          numberInfo.state++;
+        }
+      });
+      await this.dataBaseCampaignService.update(activeCampaigns[i]);
+    }
   }
 }
 

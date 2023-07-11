@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import axios, { AxiosHeaders } from 'axios';
-import { DataBaseService } from './database.service';
+import { DataBaseService } from './database/services/database.service';
 import { WppMailService } from './wpp.mailer.service';
 import CryptoJS from 'crypto-js';
 

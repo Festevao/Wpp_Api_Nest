@@ -1,5 +1,14 @@
 import { IsNotEmpty, IsOptional, IsString, MaxLength, Length } from 'class-validator';
 
+enum ClientStatus {
+  INITIALIZING = 0,
+  AUTHENTICATING = 1,
+  AUTHENTICATION_SUCCESS = 2,
+  AUTHENTICATION_FAILED = 3,
+  READY = 4,
+  DISCONNECTED = 5,
+}
+
 class ClientDTO {
   @IsString()
   @IsNotEmpty()
@@ -23,4 +32,4 @@ class ClientDTO {
   botId: string;
 }
 
-export { ClientDTO };
+export { ClientDTO, ClientStatus };
